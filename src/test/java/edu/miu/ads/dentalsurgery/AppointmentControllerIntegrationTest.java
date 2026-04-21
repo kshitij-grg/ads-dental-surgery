@@ -121,6 +121,34 @@ class AppointmentControllerIntegrationTest {
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
     }
 
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void cancelledAppointmentCannotBeCompleted() throws Exception {
+        long patientId = createPatient();
+        long dentistId = createDentist();
+        long treatmentId = createTreatment();
+        LocalDateTime startAt = LocalDateTime.now().plusDays(5).withSecond(0).withNano(0);
+
+        AppointmentRequest createRequest = new AppointmentRequest(patientId, dentistId, treatmentId, startAt);
+        MvcResult createResult = mockMvc.perform(post("/api/v1/appointments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        long appointmentId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+
+        AppointmentCancelRequest cancelRequest = new AppointmentCancelRequest("Patient unavailable");
+        mockMvc.perform(put("/api/v1/appointments/{id}/cancel", appointmentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(cancelRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        mockMvc.perform(put("/api/v1/appointments/{id}/complete", appointmentId))
+                .andExpect(status().isBadRequest());
+    }
+
     private long createPatient() throws Exception {
         PatientRequest request = new PatientRequest("Jane", "Doe", "+15151234567", "jane.doe@example.com");
         MvcResult result = mockMvc.perform(post("/api/v1/patients")

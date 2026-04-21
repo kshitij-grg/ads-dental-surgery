@@ -137,6 +137,80 @@ class WaitlistControllerIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void deactivatedWaitlistEntryShouldNotAppearInSuggestions() throws Exception {
+        long dentistId = createDentist();
+        long treatmentId = createTreatment("WL-TREAT-DEACT", "Filling", 30);
+        long cancelledAppointmentId = createCancelledAppointment(dentistId, treatmentId);
+
+        long activePatientId = createPatient("Katherine", "Johnson");
+        long toDeactivatePatientId = createPatient("Dorothy", "Vaughan");
+        LocalDateTime cancelledStart = readAppointmentStart(cancelledAppointmentId);
+
+        WaitlistEntryCreateRequest activeRequest = new WaitlistEntryCreateRequest(
+                activePatientId,
+                treatmentId,
+                cancelledStart.minusMinutes(15),
+                cancelledStart.plusMinutes(15),
+                8,
+                "Still active");
+
+        WaitlistEntryCreateRequest deactivateRequest = new WaitlistEntryCreateRequest(
+                toDeactivatePatientId,
+                treatmentId,
+                cancelledStart.minusMinutes(15),
+                cancelledStart.plusMinutes(15),
+                9,
+                "Will be deactivated");
+
+        mockMvc.perform(post("/api/v1/waitlist")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(activeRequest)))
+                .andExpect(status().isCreated());
+
+        MvcResult deactivateCreateResult = mockMvc.perform(post("/api/v1/waitlist")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(deactivateRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        long deactivatedEntryId = objectMapper.readTree(deactivateCreateResult.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(put("/api/v1/waitlist/{id}/deactivate", deactivatedEntryId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
+
+        mockMvc.perform(get("/api/v1/waitlist/suggestions")
+                        .param("appointmentId", String.valueOf(cancelledAppointmentId))
+                        .param("limit", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].patientId", hasItem((int) activePatientId)))
+                .andExpect(jsonPath("$[*].patientId", org.hamcrest.Matchers.not(hasItem((int) toDeactivatePatientId))));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void invalidPreferredWindowShouldBeRejected() throws Exception {
+        long patientId = createPatient("Rosalind", "Franklin");
+        long treatmentId = createTreatment("WL-TREAT-WINDOW", "Cleaning", 30);
+        LocalDateTime start = LocalDateTime.now().plusDays(2).withSecond(0).withNano(0);
+        LocalDateTime endBeforeStart = start.minusHours(1);
+
+        WaitlistEntryCreateRequest request = new WaitlistEntryCreateRequest(
+                patientId,
+                treatmentId,
+                start,
+                endBeforeStart,
+                6,
+                "Invalid window");
+
+        mockMvc.perform(post("/api/v1/waitlist")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
     private long createScheduledAppointment(long dentistId, long treatmentId) throws Exception {
         long patientId = createPatient("Marie", "Curie");
         LocalDateTime startAt = LocalDateTime.now().plusDays(3).withSecond(0).withNano(0);

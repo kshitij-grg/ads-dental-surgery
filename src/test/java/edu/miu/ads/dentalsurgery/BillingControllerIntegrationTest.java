@@ -113,6 +113,59 @@ class BillingControllerIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void negativeInvoiceTotalShouldBeRejected() throws Exception {
+        long completedAppointmentId = createCompletedAppointment();
+
+        InvoiceCreateRequest createRequest = new InvoiceCreateRequest(
+                completedAppointmentId,
+                BigDecimal.ZERO,
+                new BigDecimal("1000.00"),
+                "Discount exceeds treatment cost");
+
+        mockMvc.perform(post("/api/v1/billing/invoices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void paidInvoiceCannotBeMarkedPaidAgainOrVoided() throws Exception {
+        long completedAppointmentId = createCompletedAppointment();
+
+        InvoiceCreateRequest createRequest = new InvoiceCreateRequest(
+                completedAppointmentId,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                null);
+
+        MvcResult createResult = mockMvc.perform(post("/api/v1/billing/invoices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        long invoiceId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+
+        InvoiceMarkPaidRequest firstPayment = new InvoiceMarkPaidRequest("PAY-ONCE-001");
+        mockMvc.perform(put("/api/v1/billing/invoices/{id}/mark-paid", invoiceId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(firstPayment)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAID"));
+
+        InvoiceMarkPaidRequest secondPayment = new InvoiceMarkPaidRequest("PAY-TWICE-002");
+        mockMvc.perform(put("/api/v1/billing/invoices/{id}/mark-paid", invoiceId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(secondPayment)))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(put("/api/v1/billing/invoices/{id}/void", invoiceId))
+                .andExpect(status().isBadRequest());
+    }
+
     private long createScheduledAppointment() throws Exception {
         long patientId = createPatient();
         long dentistId = createDentist();
