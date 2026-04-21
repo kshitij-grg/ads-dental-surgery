@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Java / Maven
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+
+# Env
+.env
+.env.*
+
+# Docker
+**/.docker/
+
+# Kubernetes local artifacts
+*.swp
+
+# Local planning/helper docs (keep local, do not push)
+docs/
