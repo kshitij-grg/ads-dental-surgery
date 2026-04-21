@@ -1,0 +1,33 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: ads-dental-surgery-db
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: ads_dental_surgery
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ads-dental-surgery-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      DB_URL: jdbc:mysql://db:3306/ads_dental_surgery?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: ""
+      JWT_SECRET: ads-dental-surgery-jwt-secret-key-2026-container
+      JWT_EXPIRATION_MS: 3600000
+    ports:
+      - "8080:8080"
