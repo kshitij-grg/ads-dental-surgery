@@ -5,6 +5,10 @@ resources:
   - ../../base
   - secrets.yaml
   - ingress.yaml
+  - pdb.yaml
+patchesStrategicMerge:
+  - resources-patch.yaml
 images:
   - name: kshitijgrg/ads-dental-surgery
+    newName: <account-id>.dkr.ecr.us-east-1.amazonaws.com/ads-dental-surgery
     newTag: sha-a435eb6

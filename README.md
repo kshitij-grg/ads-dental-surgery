@@ -149,6 +149,8 @@ Before applying to a real cluster, update overlay secrets with secure values:
 - `k8s/overlays/dev/secrets.yaml`
 - `k8s/overlays/eks/secrets.yaml`
 
+For the full AWS deployment flow, see [docs/11-eks-deployment.md](docs/11-eks-deployment.md).
+
 ## Tech Stack
 - Java 21
 - Spring Boot 3.3.x
