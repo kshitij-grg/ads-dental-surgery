@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ads-app-config
+data:
+  DB_URL: jdbc:mysql://ads-mysql:3306/ads_dental_surgery?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+  DB_USERNAME: root
+  SERVER_PORT: "8080"
+  JWT_EXPIRATION_MS: "3600000"
