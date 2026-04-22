@@ -119,6 +119,36 @@ docker push kshitijgrg/ads-dental-surgery:latest
 
 Use `kshitijgrg/ads-dental-surgery:sha-<commit>` in Kubernetes manifests for reproducible deployments.
 
+## Kubernetes Manifests
+
+This repository uses a base plus overlays structure:
+- `k8s/base`: common resources for namespace, config, storage, MySQL, and API.
+- `k8s/overlays/dev`: development-ready overlay with LoadBalancer service and image tag pinning.
+- `k8s/overlays/eks`: EKS-oriented overlay with ALB ingress.
+
+Apply development overlay:
+
+```bash
+kubectl apply -k k8s/overlays/dev
+```
+
+Apply EKS overlay:
+
+```bash
+kubectl apply -k k8s/overlays/eks
+```
+
+Check rollout status:
+
+```bash
+kubectl -n ads-dental-surgery rollout status deployment/ads-mysql
+kubectl -n ads-dental-surgery rollout status deployment/ads-api
+```
+
+Before applying to a real cluster, update overlay secrets with secure values:
+- `k8s/overlays/dev/secrets.yaml`
+- `k8s/overlays/eks/secrets.yaml`
+
 ## Tech Stack
 - Java 21
 - Spring Boot 3.3.x
