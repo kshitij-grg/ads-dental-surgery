@@ -1,161 +1,93 @@
-# ads-dental-surgery
+# ADS Dental Surgery - Smart Appointment & Billing API
 
-Final project for the ADS dental surgery domain.
+## 🏥 Overview
+A professional, secure, and containerized API-driven system designed to modernize dental clinic operations. This project integrates appointment scheduling, billing workflows, and smart waitlist management into a unified enterprise solution.
 
-## Overview
-Build a Smart Appointment and Billing API for the ADS dental surgery domain using Spring Boot, JWT auth, DTO-based contracts, tests, Docker, Kubernetes, MySQL, and EKS deployment.
+### **Problem Statement**
+Modern dental clinics often struggle with fragmented manual processes, leading to scheduling conflicts, billing disputes, and inefficient patient waitlist management. This API provides a secure, reliable, and scalable solution to bridge these gaps.
 
-## Problem Statement
-Dental clinics often run separate, manual processes for appointment scheduling and billing. This causes missed appointments, longer patient wait times, billing disputes, and poor visibility for office staff.
+---
 
-The clinic needs one secure API-driven system that can manage appointments, manage billing, enforce business rules between scheduling and billing, and support reliable deployment in containerized and cloud environments.
+## 🛠 Tech Stack
+*   **Backend**: Java 21, Spring Boot 3.4.x
+*   **Security**: Spring Security + JWT (JSON Web Tokens)
+*   **Database**: MySQL 8.4
+*   **DevOps & Infrastructure**: Docker, Kubernetes (Minikube/EKS), Kustomize
+*   **CI/CD**: GitHub Actions
+*   **Documentation**: Springdoc OpenAPI (Swagger UI)
 
-## Feature Scope
+---
 
-### MVP Features
-1. Authentication and authorization
-- JWT login endpoint.
-- Roles: ADMIN, DENTIST, RECEPTIONIST.
-- Protected endpoints by role.
+## ✨ Features
 
-2. Core APIs
-- Patients: create, read, update.
-- Dentists: create, read, update.
-- Treatments: create, read, update, list.
-- Appointments: create, reschedule, cancel, list.
-- Bills: generate from completed appointment, get status, mark paid.
+### **MVP Core**
+*   **Role-Based Security**: Secure endpoints for `ADMIN`, `DENTIST`, and `RECEPTIONIST`.
+*   **Comprehensive APIs**: Full CRUD for Patients, Dentists, Treatments, and Appointments.
+*   **Automated Billing**: Generates invoices only from `COMPLETED` appointments, enforcing strict business rules.
+*   **Conflict Prevention**: Business logic to prevent overlapping appointments for dentists.
 
-3. Business rules
-- Prevent overlapping appointments per dentist.
-- Status flow: SCHEDULED -> COMPLETED or CANCELLED.
-- Allow bill generation only for COMPLETED appointments.
-- Enforce one bill per appointment.
+### **🚀 Standout Feature: Smart Waitlist Promotion**
+The system includes a ranking service that suggests the best patient to promote from the waitlist when an appointment is cancelled. Suggestions are ranked based on:
+*   Treatment compatibility
+*   Time-window fit
+*   Patient priority score
 
-4. Quality
-- DTO-only controller boundaries.
-- Unified API error model.
-- Unit tests for service rules.
-- Integration tests for auth + appointment + billing flow.
+---
 
-### Standout Feature
-Smart waitlist promotion suggestions:
-- Triggered after cancellation.
-- Ranked by treatment fit, time-window fit, and priority.
-- Includes explanation fields in response for transparent decisions.
+## 🏗 Architecture & Design
+The project follows a clean, layered architecture (Controller -> Service -> Repository) with DTO-only boundaries to ensure data integrity and security.
 
-### Non-Goals
-- Full email/SMS notification platform.
-- Real-time frontend app.
-- Insurance adjudication complexity.
-- Multi-clinic tenancy.
+### **Architecture & Design Artifacts**
 
-## Requirements / Use Cases
-The solution supports the main presentation and grading requirements:
-- Login and JWT-based authentication.
-- Role-based access for ADMIN, DENTIST, and RECEPTIONIST.
-- Patient, dentist, treatment, appointment, and billing workflows.
-- Appointment rescheduling, cancellation, completion, and bill generation rules.
-- Smart waitlist promotion after cancellations.
+#### **1. Domain Model Class Diagram**
+*Visual representation of core entities (Patient, Dentist, Appointment, Bill) and their relationships.*
+![Domain Model](images/domain-model-class-diagram.png)
 
-## Diagrams
+#### **2. High-Level Logical Architecture**
+*Shows the clean, layered separation of concerns (Controller -> Service -> Repository) and the security filter chain.*
+![Logical Architecture](images/high-level-architecture-logical.png)
 
-### Domain Model
-This class diagram shows the core entities and their relationships across patients, dentists, treatments, appointments, bills, and waitlist entries.
+#### **3. Database ER Diagram**
+*The MySQL schema design ensuring data normalization and referential integrity.*
+![Database ERD](images/database-erd-mysql.png)
 
-![Domain model class diagram](images/domain-model-class-diagram.png)
+#### **4. Use-Case Diagram**
+*Mapping system functionality to the ADMIN, DENTIST, and RECEPTIONIST roles.*
 
-### High-Level Architecture
-The first diagram shows the logical application layers and service flow.
+![Use-Case Diagram](images/use-case-diagram.png)
 
-![Logical architecture diagram](images/high-level-architecture-logical.png)
+---
 
-The second diagram shows how the application is deployed in EKS with the MySQL database and image registry.
+## 🤖 CI/CD Automation
+This project features a fully automated delivery pipeline using **GitHub Actions**:
+*   **Continuous Integration**: Automated Maven builds and test execution on every pull request.
+*   **Continuous Deployment**: 
+    *   Automatic Docker image building and versioning.
+    *   Automatic push to Docker Hub (`kshitijgrg/ads-dental-surgery`).
+    *   Versioning via `:latest` and `:sha-<commit-hash>` tags.
 
-![Deployment architecture diagram](images/high-level-architecture-deployment-eks.png)
+---
 
-### Database ER Diagram
-This ER diagram shows the persisted entities and the relationships used by the MySQL schema.
+## 🚀 Quick Start (Local Demo)
 
-![Database ER diagram](images/database-erd-mysql.png)
+### **Prerequisites**
+*   Docker Desktop
+*   Minikube & kubectl
 
-### Use-Case Diagram
-This use-case diagram maps the project scope to the main actors and their actions.
+### **One-Command Deployment**
+To deploy the entire stack (Database + API) to your local Minikube cluster:
 
-![Use-case diagram](images/use-case-diagram.png)
+1.  **Start Minikube**:
+    ```bash
+    minikube start
+    ```
+2.  **Deploy Manifests**:
+    ```bash
+    kubectl apply -k k8s/overlays/dev
+    ```
+3.  **Open the Service**:
+    ```bash
+    minikube service ads-api -n ads-dental-surgery
+    ```
 
-## Dockerization
-
-Build the application image:
-
-```bash
-docker build -t ads-dental-surgery:latest .
-```
-
-Run the app and MySQL together with Docker Compose:
-
-```bash
-docker compose up --build
-```
-
-The compose setup exposes the API on `http://localhost:8080` and uses the MySQL service defined in `docker-compose.yml`. The application reads its runtime settings from environment variables, including `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `SERVER_PORT`, and `JWT_SECRET`.
-
-### Image Publishing Convention
-
-For branch-to-branch delivery (especially before Kubernetes work), publish images from the feature branch with both stable and immutable tags:
-
-```bash
-BRANCH_TAG=feature-dockerization
-SHA_TAG=sha-$(git rev-parse --short HEAD)
-
-docker build -t ads-dental-surgery:${BRANCH_TAG} .
-docker tag ads-dental-surgery:${BRANCH_TAG} kshitijgrg/ads-dental-surgery:${BRANCH_TAG}
-docker tag ads-dental-surgery:${BRANCH_TAG} kshitijgrg/ads-dental-surgery:${SHA_TAG}
-docker tag ads-dental-surgery:${BRANCH_TAG} kshitijgrg/ads-dental-surgery:latest
-
-docker push kshitijgrg/ads-dental-surgery:${BRANCH_TAG}
-docker push kshitijgrg/ads-dental-surgery:${SHA_TAG}
-docker push kshitijgrg/ads-dental-surgery:latest
-```
-
-Use `kshitijgrg/ads-dental-surgery:sha-<commit>` in Kubernetes manifests for reproducible deployments.
-
-## Kubernetes Manifests
-
-This repository uses a base plus overlays structure:
-- `k8s/base`: common resources for namespace, config, storage, MySQL, and API.
-- `k8s/overlays/dev`: development-ready overlay with LoadBalancer service and image tag pinning.
-- `k8s/overlays/eks`: EKS-oriented overlay with ALB ingress.
-
-Apply development overlay:
-
-```bash
-kubectl apply -k k8s/overlays/dev
-```
-
-Apply EKS overlay:
-
-```bash
-kubectl apply -k k8s/overlays/eks
-```
-
-Check rollout status:
-
-```bash
-kubectl -n ads-dental-surgery rollout status deployment/ads-mysql
-kubectl -n ads-dental-surgery rollout status deployment/ads-api
-```
-
-Before applying to a real cluster, update overlay secrets with secure values:
-- `k8s/overlays/dev/secrets.yaml`
-- `k8s/overlays/eks/secrets.yaml`
-
-For the full AWS deployment flow, see [docs/11-eks-deployment.md](docs/11-eks-deployment.md).
-
-## Tech Stack
-- Java 21
-- Spring Boot 3.3.x
-- Spring Security and JWT
-- MySQL 8.4
-- Docker
-- Kubernetes
-- AWS EKS
+*Note: For the best experience, visit `{URL}/swagger-ui/index.html` once the service opens to interact with the API.*
