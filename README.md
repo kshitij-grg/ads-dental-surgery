@@ -83,6 +83,42 @@ This use-case diagram maps the project scope to the main actors and their action
 
 ![Use-case diagram](images/use-case-diagram.png)
 
+## Dockerization
+
+Build the application image:
+
+```bash
+docker build -t ads-dental-surgery:latest .
+```
+
+Run the app and MySQL together with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+The compose setup exposes the API on `http://localhost:8080` and uses the MySQL service defined in `docker-compose.yml`. The application reads its runtime settings from environment variables, including `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `SERVER_PORT`, and `JWT_SECRET`.
+
+### Image Publishing Convention
+
+For branch-to-branch delivery (especially before Kubernetes work), publish images from the feature branch with both stable and immutable tags:
+
+```bash
+BRANCH_TAG=feature-dockerization
+SHA_TAG=sha-$(git rev-parse --short HEAD)
+
+docker build -t ads-dental-surgery:${BRANCH_TAG} .
+docker tag ads-dental-surgery:${BRANCH_TAG} kshitijgrg/ads-dental-surgery:${BRANCH_TAG}
+docker tag ads-dental-surgery:${BRANCH_TAG} kshitijgrg/ads-dental-surgery:${SHA_TAG}
+docker tag ads-dental-surgery:${BRANCH_TAG} kshitijgrg/ads-dental-surgery:latest
+
+docker push kshitijgrg/ads-dental-surgery:${BRANCH_TAG}
+docker push kshitijgrg/ads-dental-surgery:${SHA_TAG}
+docker push kshitijgrg/ads-dental-surgery:latest
+```
+
+Use `kshitijgrg/ads-dental-surgery:sha-<commit>` in Kubernetes manifests for reproducible deployments.
+
 ## Tech Stack
 - Java 21
 - Spring Boot 3.3.x
