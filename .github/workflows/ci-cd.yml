@@ -72,7 +72,13 @@ jobs:
           echo "Automation Setup Complete!"
           echo "For local Minikube: Run 'kubectl apply -k k8s/overlays/dev' manually."
           echo "For Cloud (EKS): Configure AWS credentials in GitHub Secrets and uncomment the deployment step."
-          
+      
+      
+      # Example for local Minikube deployment:
+      # - name: Deploy to Minikube
+      #   run: kubectl apply -k k8s/overlays/dev
+      #   kubectl rollout restart deployment ads-api -n ads-dental-surgery
+      
       # Example of how a Cloud deployment would look:
       # - name: Configure AWS credentials
       #   uses: aws-actions/configure-aws-credentials@v1
