@@ -12,6 +12,13 @@ patches:
       - op: replace
         path: /spec/type
         value: LoadBalancer
+  - target:
+      kind: PersistentVolumeClaim
+      name: ads-mysql-pvc
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: standard
 images:
   - name: kshitijgrg/ads-dental-surgery
-    newTag: sha-a435eb6
+    newTag: latest
