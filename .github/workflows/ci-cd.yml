@@ -1,0 +1,88 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  # 1. CI Job: Build and Test the Java application
+  build-and-test:
+    name: CI - Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and Test with Maven
+        run: ./mvnw clean verify
+
+  # 2. Docker Job: Build and Push image to Docker Hub
+  # Only runs on push to master branch after tests pass
+  docker-build-push:
+    name: CD - Docker Build and Push
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/ads-dental-surgery:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/ads-dental-surgery:sha-${{ github.sha }}
+
+  # 3. CD Job: Deploy (Placeholder/Manual Dispatch for Cloud)
+  deploy:
+    name: CD - Deploy to Cluster
+    needs: docker-build-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Deployment Instructions
+        run: |
+          echo "Automation Setup Complete!"
+          echo "For local Minikube: Run 'kubectl apply -k k8s/overlays/dev' manually."
+          echo "For Cloud (EKS): Configure AWS credentials in GitHub Secrets and uncomment the deployment step."
+          
+      # Example of how a Cloud deployment would look:
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v1
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: us-east-1
+      #
+      # - name: Update KubeConfig
+      #   run: aws eks update-kubeconfig --name ads-dental-surgery --region us-east-1
+      #
+      # - name: Deploy to EKS
+      #   run: kubectl apply -k k8s/overlays/eks
