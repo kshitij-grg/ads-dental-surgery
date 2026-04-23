@@ -27,7 +27,7 @@ services:
       DB_URL: jdbc:mysql://db:3306/ads_dental_surgery?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: root
       DB_PASSWORD: ""
-      JWT_SECRET: ads-dental-surgery-jwt-secret-key-2026-container
+      JWT_SECRET: ads-dental-surgery-secret-key-long-32chars-min
       JWT_EXPIRATION_MS: 3600000
     ports:
       - "8080:8080"
