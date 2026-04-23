@@ -15,7 +15,7 @@ spec:
       containers:
         - name: ads-api
           image: kshitijgrg/ads-dental-surgery:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:
